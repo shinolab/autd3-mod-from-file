@@ -42,7 +42,7 @@ add_compile_definitions(_USE_MATH_DEFINES)
 add_subdirectory(src)
 
 # autd3-library
-option(BUILD_HOLO_GAIN "BUILD_HOLO_GAIN" ON)
+option(BUILD_HOLO_GAIN "BUILD_HOLO_GAIN" OFF)
 option(BUILD_SOEM_LINK "BUILD_SOEM_LINK" ON)
 option(IGNORE_EXAMPLE "IGNORE_EXAMPLE" ON)
 option(BUILD_CAPI "BUILD_CAPI" OFF)
