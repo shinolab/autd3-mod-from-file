@@ -23,7 +23,7 @@ double Sinc(const double x) noexcept {
 }
 }  // namespace
 
-Result<core::ModulationPtr, std::string> RawPCM::Create(const std::string& filename, const double sampling_freq) {
+Result<core::ModulationPtr, std::string> RawPCM::create(const std::string& filename, const double sampling_freq) {
   std::ifstream ifs;
   ifs.open(filename, std::ios::binary);
 
@@ -41,7 +41,7 @@ Result<core::ModulationPtr, std::string> RawPCM::Create(const std::string& filen
   return Ok(std::move(mod));
 }
 
-Error RawPCM::Build(const core::Configuration config) {
+Error RawPCM::build(const core::Configuration config) {
   const auto mod_sf = static_cast<int32_t>(config.mod_sampling_freq());
   if (this->_sampling_freq < std::numeric_limits<double>::epsilon()) this->_sampling_freq = static_cast<double>(mod_sf);
 
@@ -81,7 +81,7 @@ Error RawPCM::Build(const core::Configuration config) {
   for (size_t i = 0; i < lpf_buf.size(); i++) {
     this->buffer().at(i) = static_cast<uint8_t>(round(255 * ((lpf_buf.at(i) - min_v) / (max_v - min_v))));
   }
-  return Ok();
+  return Ok(true);
 }
 
 namespace {
@@ -95,36 +95,55 @@ Result<T, std::string> ReadFromStream(std::ifstream& fsp) {
 }
 }  // namespace
 
-Result<core::ModulationPtr, std::string> Wav::Create(const std::string& filename) {
+Result<core::ModulationPtr, std::string> Wav::create(const std::string& filename) {
   std::ifstream fs;
   fs.open(filename, std::ios::binary);
   if (fs.fail()) return Err(std::string("Error on opening file."));
 
-  if (const auto riff_tag = ReadFromStream<uint32_t>(fs).unwrap_or(0); riff_tag != 0x46464952u) return Err(std::string("Invalid data format."));
+  auto res = ReadFromStream<uint32_t>(fs);
+  if (res.is_err()) return Err(res.unwrap_err());
+  if (const auto riff_tag = res.unwrap(); riff_tag != 0x46464952u) return Err(std::string("Invalid data format."));
 
   [[maybe_unused]] const auto chunk_size = ReadFromStream<uint32_t>(fs);
 
-  if (const auto wav_desc = ReadFromStream<uint32_t>(fs).unwrap_or(0); wav_desc != 0x45564157u) return Err(std::string("Invalid data format."));
+  res = ReadFromStream<uint32_t>(fs);
+  if (res.is_err()) return Err(res.unwrap_err());
+  if (const auto wav_desc = res.unwrap(); wav_desc != 0x45564157u) return Err(std::string("Invalid data format."));
 
-  if (const auto fmt_desc = ReadFromStream<uint32_t>(fs).unwrap_or(0); fmt_desc != 0x20746d66u) return Err(std::string("Invalid data format."));
+  res = ReadFromStream<uint32_t>(fs);
+  if (res.is_err()) return Err(res.unwrap_err());
+  if (const auto fmt_desc = res.unwrap(); fmt_desc != 0x20746d66u) return Err(std::string("Invalid data format."));
 
-  if (const auto fmt_chunk_size = ReadFromStream<uint32_t>(fs).unwrap_or(0); fmt_chunk_size != 0x00000010u)
-    return Err(std::string("Invalid data format."));
+  res = ReadFromStream<uint32_t>(fs);
+  if (res.is_err()) return Err(res.unwrap_err());
+  if (const auto fmt_chunk_size = res.unwrap(); fmt_chunk_size != 0x00000010u) return Err(std::string("Invalid data format."));
 
-  if (const auto wave_fmt = ReadFromStream<uint16_t>(fs).unwrap_or(0); wave_fmt != 0x0001u)
+  auto res16 = ReadFromStream<uint16_t>(fs);
+  if (res16.is_err()) return Err(res16.unwrap_err());
+  if (const auto wave_fmt = res16.unwrap(); wave_fmt != 0x0001u)
     return Err(std::string("Invalid data format. This supports only uncompressed linear PCM data."));
 
-  if (const auto channel = ReadFromStream<uint16_t>(fs).unwrap_or(0); channel != 0x0001u)
-    return Err(std::string("Invalid data format. This supports only monaural audio."));
+  res16 = ReadFromStream<uint16_t>(fs);
+  if (res16.is_err()) return Err(res16.unwrap_err());
+  if (const auto channel = res16.unwrap(); channel != 0x0001u) return Err(std::string("Invalid data format. This supports only monaural audio."));
 
-  const auto sample_freq = ReadFromStream<uint32_t>(fs).unwrap_or(0);
-  [[maybe_unused]] const auto bytes_per_sec = ReadFromStream<uint32_t>(fs).unwrap_or(0);
-  [[maybe_unused]] const auto block_size = ReadFromStream<uint16_t>(fs).unwrap_or(0);
-  const auto bits_per_sample = ReadFromStream<uint16_t>(fs).unwrap_or(0);
+  res = ReadFromStream<uint32_t>(fs);
+  if (res.is_err()) return Err(res.unwrap_err());
+  const auto sample_freq = res.unwrap();
+  [[maybe_unused]] const auto bytes_per_sec = res = ReadFromStream<uint32_t>(fs);
+  [[maybe_unused]] const auto block_size = ReadFromStream<uint16_t>(fs);
 
-  if (const auto data_desc = ReadFromStream<uint32_t>(fs).unwrap_or(0); data_desc != 0x61746164u) return Err(std::string("Invalid data format."));
+  res16 = ReadFromStream<uint16_t>(fs);
+  if (res16.is_err()) return Err(res16.unwrap_err());
+  const auto bits_per_sample = res16.unwrap();
 
-  const auto data_chunk_size = ReadFromStream<uint32_t>(fs).unwrap_or(0);
+  res = ReadFromStream<uint32_t>(fs);
+  if (res.is_err()) return Err(res.unwrap_err());
+  if (const auto data_desc = res.unwrap(); data_desc != 0x61746164u) return Err(std::string("Invalid data format."));
+
+  res = ReadFromStream<uint32_t>(fs);
+  if (res.is_err()) return Err(res.unwrap_err());
+  const auto data_chunk_size = res.unwrap();
 
   if (bits_per_sample != 8 && bits_per_sample != 16) return Err(std::string("This only supports 8 or 16 bits per sampling data."));
 
@@ -132,10 +151,14 @@ Result<core::ModulationPtr, std::string> Wav::Create(const std::string& filename
   const auto data_size = data_chunk_size / (bits_per_sample / 8);
   for (size_t i = 0; i < data_size; i++) {
     if (bits_per_sample == 8) {
-      auto d = ReadFromStream<uint8_t>(fs).unwrap_or(0);
+      auto res8 = ReadFromStream<uint8_t>(fs);
+      if (res8.is_err()) return Err(res8.unwrap_err());
+      auto d = res8.unwrap();
       tmp.emplace_back(d);
     } else if (bits_per_sample == 16) {
-      const auto d32 = static_cast<int32_t>(ReadFromStream<int16_t>(fs).unwrap_or(0)) - std::numeric_limits<int16_t>::min();
+      auto res16_i = ReadFromStream<int16_t>(fs);
+      if (res16_i.is_err()) return Err(res16_i.unwrap_err());
+      const auto d32 = static_cast<int32_t>(res16_i.unwrap()) - std::numeric_limits<int16_t>::min();
       auto d8 = static_cast<uint8_t>(static_cast<double>(d32) / std::numeric_limits<uint16_t>::max() * std::numeric_limits<uint8_t>::max());
       tmp.emplace_back(d8);
     }
@@ -145,7 +168,7 @@ Result<core::ModulationPtr, std::string> Wav::Create(const std::string& filename
   return Ok(std::move(mod));
 }
 
-Error Wav::Build(const core::Configuration config) {
+Error Wav::build(const core::Configuration config) {
   const auto mod_sf = static_cast<int32_t>(config.mod_sampling_freq());
   const auto mod_buf_size = static_cast<size_t>(config.mod_buf_size());
 
@@ -162,6 +185,6 @@ Error Wav::Build(const core::Configuration config) {
   }
 
   this->buffer() = std::move(sample_buf);
-  return Ok();
+  return Ok(true);
 }
 }  // namespace autd::modulation

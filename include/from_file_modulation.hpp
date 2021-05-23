@@ -33,8 +33,8 @@ class RawPCM final : public core::Modulation {
    * The maximum modulation buffer size is shown in autd::MOD_BUF_SIZE. Only the data up to MOD_BUF_SIZE/MOD_SAMPLING_FREQ seconds can be output.
    * @return return Ok(ModulationPtr) if succeeded, or Err(error msg) if failed to read the file
    */
-  static Result<core::ModulationPtr, std::string> Create(const std::string& filename, double sampling_freq = 0.0);
-  Error Build(core::Configuration config) override;
+  static Result<core::ModulationPtr, std::string> create(const std::string& filename, double sampling_freq = 0.0);
+  Error build(core::Configuration config) override;
   explicit RawPCM(const double sampling_freq, std::vector<uint8_t> buf) : Modulation(), _sampling_freq(sampling_freq), _buf(std::move(buf)) {}
 
  private:
@@ -56,8 +56,8 @@ class Wav final : public core::Modulation {
    * The maximum modulation buffer size is shown in autd::MOD_BUF_SIZE. Only the data up to MOD_BUF_SIZE/MOD_SAMPLING_FREQ seconds can be output.
    * @return return Ok(ModulationPtr) if succeeded, or Err(error msg) if failed to read the file
    */
-  static Result<core::ModulationPtr, std::string> Create(const std::string& filename);
-  Error Build(core::Configuration config) override;
+  static Result<core::ModulationPtr, std::string> create(const std::string& filename);
+  Error build(core::Configuration config) override;
   explicit Wav(const uint32_t sampling_freq, std::vector<uint8_t> buf) : Modulation(), _sampling_freq(sampling_freq), _buf(std::move(buf)) {}
 
  private:
