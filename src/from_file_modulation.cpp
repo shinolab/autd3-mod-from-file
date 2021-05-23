@@ -3,7 +3,7 @@
 // Created Date: 17/05/2021
 // Author: Shun Suzuki
 // -----
-// Last Modified: 17/05/2021
+// Last Modified: 23/05/2021
 // Modified By: Shun Suzuki (suzuki@hapis.k.u-tokyo.ac.jp)
 // -----
 // Copyright (c) 2021 Hapis Lab. All rights reserved.
@@ -23,7 +23,7 @@ double Sinc(const double x) noexcept {
 }
 }  // namespace
 
-Result<core::ModulationPtr, std::string> RawPCMModulation::Create(const std::string& filename, const double sampling_freq) {
+Result<core::ModulationPtr, std::string> RawPCM::Create(const std::string& filename, const double sampling_freq) {
   std::ifstream ifs;
   ifs.open(filename, std::ios::binary);
 
@@ -37,11 +37,11 @@ Result<core::ModulationPtr, std::string> RawPCMModulation::Create(const std::str
     tmp.emplace_back(value);
   }
 
-  core::ModulationPtr mod = std::make_shared<RawPCMModulation>(sampling_freq, tmp);
+  core::ModulationPtr mod = std::make_shared<RawPCM>(sampling_freq, tmp);
   return Ok(std::move(mod));
 }
 
-Error RawPCMModulation::Build(const core::Configuration config) {
+Error RawPCM::Build(const core::Configuration config) {
   const auto mod_sf = static_cast<int32_t>(config.mod_sampling_freq());
   if (this->_sampling_freq < std::numeric_limits<double>::epsilon()) this->_sampling_freq = static_cast<double>(mod_sf);
 
@@ -95,7 +95,7 @@ Result<T, std::string> ReadFromStream(std::ifstream& fsp) {
 }
 }  // namespace
 
-Result<core::ModulationPtr, std::string> WavModulation::Create(const std::string& filename) {
+Result<core::ModulationPtr, std::string> Wav::Create(const std::string& filename) {
   std::ifstream fs;
   fs.open(filename, std::ios::binary);
   if (fs.fail()) return Err(std::string("Error on opening file."));
@@ -141,11 +141,11 @@ Result<core::ModulationPtr, std::string> WavModulation::Create(const std::string
     }
   }
 
-  core::ModulationPtr mod = std::make_shared<WavModulation>(sample_freq, tmp);
+  core::ModulationPtr mod = std::make_shared<Wav>(sample_freq, tmp);
   return Ok(std::move(mod));
 }
 
-Error WavModulation::Build(const core::Configuration config) {
+Error Wav::Build(const core::Configuration config) {
   const auto mod_sf = static_cast<int32_t>(config.mod_sampling_freq());
   const auto mod_buf_size = static_cast<size_t>(config.mod_buf_size());
 

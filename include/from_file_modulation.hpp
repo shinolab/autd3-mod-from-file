@@ -3,7 +3,7 @@
 // Created Date: 17/05/2021
 // Author: Shun Suzuki
 // -----
-// Last Modified: 17/05/2021
+// Last Modified: 23/05/2021
 // Modified By: Shun Suzuki (suzuki@hapis.k.u-tokyo.ac.jp)
 // -----
 // Copyright (c) 2021 Hapis Lab. All rights reserved.
@@ -21,7 +21,7 @@ namespace autd::modulation {
 /**
  * @brief Modulation created from raw pcm data
  */
-class RawPCMModulation final : public core::Modulation {
+class RawPCM final : public core::Modulation {
  public:
   /**
    * @brief Generate function
@@ -35,8 +35,7 @@ class RawPCMModulation final : public core::Modulation {
    */
   static Result<core::ModulationPtr, std::string> Create(const std::string& filename, double sampling_freq = 0.0);
   Error Build(core::Configuration config) override;
-  explicit RawPCMModulation(const double sampling_freq, std::vector<uint8_t> buf)
-      : Modulation(), _sampling_freq(sampling_freq), _buf(std::move(buf)) {}
+  explicit RawPCM(const double sampling_freq, std::vector<uint8_t> buf) : Modulation(), _sampling_freq(sampling_freq), _buf(std::move(buf)) {}
 
  private:
   double _sampling_freq = 0;
@@ -46,7 +45,7 @@ class RawPCMModulation final : public core::Modulation {
 /**
  * @brief Modulation created from wav file
  */
-class WavModulation final : public core::Modulation {
+class Wav final : public core::Modulation {
  public:
   /**
    * @brief Generate function
@@ -59,8 +58,7 @@ class WavModulation final : public core::Modulation {
    */
   static Result<core::ModulationPtr, std::string> Create(const std::string& filename);
   Error Build(core::Configuration config) override;
-  explicit WavModulation(const uint32_t sampling_freq, std::vector<uint8_t> buf)
-      : Modulation(), _sampling_freq(sampling_freq), _buf(std::move(buf)) {}
+  explicit Wav(const uint32_t sampling_freq, std::vector<uint8_t> buf) : Modulation(), _sampling_freq(sampling_freq), _buf(std::move(buf)) {}
 
  private:
   uint32_t _sampling_freq = 0;
