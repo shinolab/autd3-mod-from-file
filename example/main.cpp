@@ -3,7 +3,7 @@
 // Created Date: 17/05/2021
 // Author: Shun Suzuki
 // -----
-// Last Modified: 23/05/2021
+// Last Modified: 03/06/2021
 // Modified By: Shun Suzuki (suzuki@hapis.k.u-tokyo.ac.jp)
 // -----
 // Copyright (c) 2021 Hapis Lab. All rights reserved.
@@ -36,44 +36,44 @@ string GetAdapterName() {
 
 int main() {
   try {
-    autd::Controller autd;
-    autd.geometry()->add_device(autd::Vector3(0, 0, 0), autd::Vector3(0, 0, 0));
+    auto autd = autd::Controller::create();
+    autd->geometry()->add_device(autd::Vector3(0, 0, 0), autd::Vector3(0, 0, 0));
     const auto ifname = GetAdapterName();
-    if (auto res = autd.open(autd::link::SOEMLink::create(ifname, autd.geometry()->num_devices())); res.is_err()) {
+    if (auto res = autd->open(autd::link::SOEMLink::create(ifname, autd->geometry()->num_devices())); res.is_err()) {
       std::cerr << res.unwrap_err() << std::endl;
       return ENXIO;
     }
 
-    autd.geometry()->wavelength() = 8.5;
+    autd->geometry()->wavelength() = 8.5;
 
-    autd.clear().unwrap();
-    autd.synchronize().unwrap();
+    autd->clear().unwrap();
+    autd->synchronize().unwrap();
 
-    autd.silent_mode() = true;
+    autd->silent_mode() = true;
 
     const autd::Vector3 center(TRANS_SPACING_MM * ((NUM_TRANS_X - 1) / 2.0), TRANS_SPACING_MM * ((NUM_TRANS_Y - 1) / 2.0), 150.0);
     const auto g = autd::gain::FocalPoint::create(center);
 
     cout << "RawPCM test" << endl;
     const auto raw_pcm = autd::modulation::RawPCM::create("sin150.dat", 4000).unwrap();
-    autd.send(g, raw_pcm).unwrap();
+    autd->send(g, raw_pcm).unwrap();
 
     cout << "press any key to finish..." << endl;
     cin.ignore();
-    autd.stop().unwrap();
+    autd->stop().unwrap();
 
     cout << "press any key to start Wave test..." << endl;
     cin.ignore();
 
     cout << "Wave test" << endl;
     const auto wav = autd::modulation::Wav::create("sin150.wav").unwrap();
-    autd.send(g, wav).unwrap();
+    autd->send(g, wav).unwrap();
 
     cout << "press any key to finish..." << endl;
     cin.ignore();
 
-    autd.clear().unwrap();
-    autd.close().unwrap();
+    autd->clear().unwrap();
+    autd->close().unwrap();
 
   } catch (exception& e) {
     std::cerr << e.what() << std::endl;
