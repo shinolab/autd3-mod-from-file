@@ -3,7 +3,7 @@
 // Created Date: 17/05/2021
 // Author: Shun Suzuki
 // -----
-// Last Modified: 23/05/2021
+// Last Modified: 20/06/2021
 // Modified By: Shun Suzuki (suzuki@hapis.k.u-tokyo.ac.jp)
 // -----
 // Copyright (c) 2021 Hapis Lab. All rights reserved.
@@ -23,7 +23,8 @@ double Sinc(const double x) noexcept {
 }
 }  // namespace
 
-Result<core::ModulationPtr, std::string> RawPCM::create(const std::string& filename, const double sampling_freq) {
+Result<core::ModulationPtr, std::string> RawPCM::create(const std::string& filename, const double sampling_freq,
+                                                        const uint16_t mod_sampling_freq_div) {
   std::ifstream ifs;
   ifs.open(filename, std::ios::binary);
 
@@ -37,13 +38,12 @@ Result<core::ModulationPtr, std::string> RawPCM::create(const std::string& filen
     tmp.emplace_back(value);
   }
 
-  core::ModulationPtr mod = std::make_shared<RawPCM>(sampling_freq, tmp);
+  core::ModulationPtr mod = std::make_shared<RawPCM>(sampling_freq, mod_sampling_freq_div, tmp);
   return Ok(std::move(mod));
 }
 
-Error RawPCM::build(const core::Configuration config) {
-  const auto mod_sf = static_cast<int32_t>(config.mod_sampling_freq());
-  if (this->_sampling_freq < std::numeric_limits<double>::epsilon()) this->_sampling_freq = static_cast<double>(mod_sf);
+Error RawPCM::calc() {
+  const auto mod_sf = this->sampling_freq();
 
   // up sampling
   std::vector<int32_t> sample_buf;
@@ -95,7 +95,7 @@ Result<T, std::string> ReadFromStream(std::ifstream& fsp) {
 }
 }  // namespace
 
-Result<core::ModulationPtr, std::string> Wav::create(const std::string& filename) {
+Result<core::ModulationPtr, std::string> Wav::create(const std::string& filename, const uint16_t mod_sampling_freq_div) {
   std::ifstream fs;
   fs.open(filename, std::ios::binary);
   if (fs.fail()) return Err(std::string("Error on opening file."));
@@ -164,19 +164,18 @@ Result<core::ModulationPtr, std::string> Wav::create(const std::string& filename
     }
   }
 
-  core::ModulationPtr mod = std::make_shared<Wav>(sample_freq, tmp);
+  core::ModulationPtr mod = std::make_shared<Wav>(sample_freq, mod_sampling_freq_div, tmp);
   return Ok(std::move(mod));
 }
 
-Error Wav::build(const core::Configuration config) {
-  const auto mod_sf = static_cast<int32_t>(config.mod_sampling_freq());
-  const auto mod_buf_size = static_cast<size_t>(config.mod_buf_size());
+Error Wav::calc() {
+  const auto mod_sf = this->sampling_freq();
 
   // down sampling
   std::vector<uint8_t> sample_buf;
   const auto freq_ratio = mod_sf / static_cast<double>(_sampling_freq);
   auto buffer_size = static_cast<size_t>(static_cast<double>(this->_buf.size()) * freq_ratio);
-  buffer_size = std::min(buffer_size, mod_buf_size);
+  buffer_size = std::min(buffer_size, core::MOD_BUF_SIZE_MAX);
 
   sample_buf.resize(buffer_size);
   for (size_t i = 0; i < sample_buf.size(); i++) {

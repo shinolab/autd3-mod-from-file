@@ -3,7 +3,7 @@
 // Created Date: 17/05/2021
 // Author: Shun Suzuki
 // -----
-// Last Modified: 03/06/2021
+// Last Modified: 20/06/2021
 // Modified By: Shun Suzuki (suzuki@hapis.k.u-tokyo.ac.jp)
 // -----
 // Copyright (c) 2021 Hapis Lab. All rights reserved.
@@ -20,7 +20,7 @@ using autd::NUM_TRANS_X, autd::NUM_TRANS_Y, autd::TRANS_SPACING_MM;
 using namespace std;
 
 string GetAdapterName() {
-  auto adapters = autd::link::SOEMLink::enumerate_adapters();
+  auto adapters = autd::link::SOEM::enumerate_adapters();
   for (size_t i = 0; i < adapters.size(); i++) {
     auto& [fst, snd] = adapters[i];
     cout << "[" << i << "]: " << fst << ", " << snd << endl;
@@ -39,7 +39,7 @@ int main() {
     auto autd = autd::Controller::create();
     autd->geometry()->add_device(autd::Vector3(0, 0, 0), autd::Vector3(0, 0, 0));
     const auto ifname = GetAdapterName();
-    if (auto res = autd->open(autd::link::SOEMLink::create(ifname, autd->geometry()->num_devices())); res.is_err()) {
+    if (auto res = autd->open(autd::link::SOEM::create(ifname, autd->geometry()->num_devices())); res.is_err()) {
       std::cerr << res.unwrap_err() << std::endl;
       return ENXIO;
     }
@@ -47,7 +47,6 @@ int main() {
     autd->geometry()->wavelength() = 8.5;
 
     autd->clear().unwrap();
-    autd->synchronize().unwrap();
 
     autd->silent_mode() = true;
 
